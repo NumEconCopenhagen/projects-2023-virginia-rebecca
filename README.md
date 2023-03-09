@@ -1,8 +1,8 @@
-# \[Group name\]
+# \[Virginia&Rebecca\]
 
 **Group members:**
-- A
-- B
+- A Virginia Bergamasco
+- B Rebecca Sabatino
 - C
 
 This repository contains  
