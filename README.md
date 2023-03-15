@@ -1,9 +1,10 @@
 # \[Virginia&Rebecca\]
 
 **Group members:**
-- A Virginia Bergamasco
-- B Rebecca Sabatino
-- C
+- Virginia Bergamasco
+- Rebecca Sabatino
+ok
+
 
 This repository contains  
 1. Inaugural project. 
