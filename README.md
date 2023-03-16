@@ -2,8 +2,8 @@
 
 **Group members:**
 - Virginia Bergamasco
-- Rebecca Sabatino
-ciao
+- Rebecca Sabatinoo
+
 
 
 This repository contains  
