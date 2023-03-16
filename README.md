@@ -2,7 +2,7 @@
 
 **Group members:**
 - Virginia Bergamasco
-- Rebecca Sabatinoo
+- Rebecca Sabatino
 
 
 
