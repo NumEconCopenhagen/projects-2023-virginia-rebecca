@@ -54,7 +54,16 @@ class HouseholdSpecializationModelClass:
         C = par.wM*LM + par.wF*LF
 
         # b. home production
-        H = HM**(1-par.alpha)*HF**par.alpha
+        if par.sigma == 1:
+           H = HM**(1-par.alpha)*HF**par.alpha
+           
+
+        elif par.sigma == 0:
+           H = np.minimum(HM, HF)
+           
+
+        else:
+          H = ((1-par.alpha)*HM**((par.sigma -1 )/par.sigma) + par.alpha*HF**((par.sigma -1 )/par.sigma))**(par.sigma/(par.sigma-1))
 
         # c. total consumption utility
         Q = C**par.omega*H**(1-par.omega)
@@ -109,12 +118,71 @@ class HouseholdSpecializationModelClass:
     def solve(self,do_print=False):
         """ solve model continously """
 
-        pass    
+        par=self.par
+        sol=self.sol
+        optimum=SimpleNamespace()
+
+        # Define objective function of the minimization, therefore the utility function with the minus in front
+        obj= lambda x: -self.calc_utility(x[0], x[1], x[2],x[3])
+        
+        # Set the initial guess
+        initial_guess = [0.1, 0.1, 0.1, 0.1]
+        
+        # Set the contraints 
+        constraints = ({'type': 'ineq', 'fun': lambda x :  -x[0] - x[1] + 24}, {'type': 'ineq', 'fun': lambda x : -x[2] -x[3] + 24})
+
+        # Set the bounds
+        bounds=((1e-8,24), (1e-8,24), (1e-8,24), (1e-8,24))
+
+        # Apply the minimize function
+        sol_cont = optimize.minimize(obj, initial_guess, method='SLSQP', bounds=bounds, constraints=constraints)
+        
+        # Save the results as LM, HM, LF, HF
+        optimum.LM=sol_cont.x[0]
+        optimum.HM=sol_cont.x[1]
+        optimum.LF=sol_cont.x[2]
+        optimum.HF=sol_cont.x[3]
+
+        return optimum   
 
     def solve_wF_vec(self,discrete=False):
         """ solve model for vector of female wages """
 
-        pass
+        par=self.par
+        sol=self.sol
+        max=SimpleNamespace()
+
+        # Loop trough the index and the values of wF_vec
+        for i,wF in enumerate(par.wF_vec):
+           
+           # Set the parameter value as the correspondent value of the loop
+           par.wF = wF
+
+           # Define objective function of the minimization, therefore the utility function with the minus in front
+           obj= lambda x: -self.calc_utility(x[0], x[1], x[2],x[3])
+        
+           # Set the initial guess
+           initial_guess = [0.1, 0.1, 0.1, 0.1]
+
+           # Set the constraints
+           constraints = ({'type': 'ineq', 'fun': lambda x :  -x[0] - x[1] + 24}, {'type': 'ineq', 'fun': lambda x : -x[2] -x[3] + 24})
+
+           # Set the bounds
+           bounds=((1e-8,24), (1e-8,24), (1e-8,24), (1e-8,24))
+
+           # Apply the minimize function
+           solution = optimize.minimize(obj, initial_guess, method='SLSQP', bounds=bounds, constraints=constraints)
+
+           # Take results of HM and HF
+           max.HM=solution.x[1]
+           max.HF=solution.x[3]
+           
+           # Stack the solutions of each loop in the vectors HM_vec and HF_vec
+           sol.HM_vec[i]=solution.x[1]
+           sol.HF_vec[i]=solution.x[3]
+        
+
+        return sol.HM_vec, sol.HF_vec
 
     def run_regression(self):
         """ run regression """
