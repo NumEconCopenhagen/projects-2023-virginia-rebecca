@@ -19,7 +19,7 @@ class HouseholdSpecializationModelClass:
         # b. preferences
         par.rho = 2.0
         par.nu = 0.001
-        par.epsilon = 1.0
+        par.epsilon = 2.0
         par.omega = 0.5 
 
         # c. household production
