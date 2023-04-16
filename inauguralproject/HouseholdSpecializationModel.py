@@ -21,6 +21,10 @@ class HouseholdSpecializationModelClass:
         par.nu = 0.001
         par.epsilon = 1.0
         par.omega = 0.5 
+        par.deltalm = 0.5
+        par.deltalf = 0.5
+        par.deltahm = 0.7
+        par.deltahf = 0.7
 
         # c. household production
         par.alpha = 0.5
@@ -129,16 +133,13 @@ class HouseholdSpecializationModelClass:
         obj= lambda x: -self.calc_utility(x[0], x[1], x[2],x[3])
         
         # Set the initial guess
-        initial_guess = [0.1, 0.1, 0.1, 0.1]
-        
-        # Set the contraints 
-        constraints = ({'type': 'ineq', 'fun': lambda x :  -x[0] - x[1] + 24}, {'type': 'ineq', 'fun': lambda x : -x[2] -x[3] + 24})
+        initial_guess = [4, 4, 4, 4]
 
         # Set the bounds
         bounds=((1e-8,24), (1e-8,24), (1e-8,24), (1e-8,24))
 
         # Apply the minimize function
-        sol_cont = optimize.minimize(obj, initial_guess, method='SLSQP', bounds=bounds, constraints=constraints)
+        sol_cont = optimize.minimize(obj, initial_guess, method='Nelder-Mead', bounds=bounds)
         
         # Save the results as LM, HM, LF, HF
         optimum.LM=sol_cont.x[0]
@@ -165,16 +166,13 @@ class HouseholdSpecializationModelClass:
            obj= lambda x: -self.calc_utility(x[0], x[1], x[2],x[3])
         
            # Set the initial guess
-           initial_guess = [0.1, 0.1, 0.1, 0.1]
-
-           # Set the constraints
-           constraints = ({'type': 'ineq', 'fun': lambda x :  -x[0] - x[1] + 24}, {'type': 'ineq', 'fun': lambda x : -x[2] -x[3] + 24})
+           initial_guess = [4, 4, 4, 4]
 
            # Set the bounds
            bounds=((1e-8,24), (1e-8,24), (1e-8,24), (1e-8,24))
 
            # Apply the minimize function
-           solution = optimize.minimize(obj, initial_guess, method='SLSQP', bounds=bounds, constraints=constraints)
+           solution = optimize.minimize(obj, initial_guess, method='Nelder-Mead', bounds=bounds)
 
            # Take results of HM and HF
            max.HM=solution.x[1]
@@ -209,10 +207,10 @@ class HouseholdSpecializationModelClass:
         par.sigma = x[1]
         
         # Calculate the optimal HM and HF vectors
-        solver = self.solve_wF_vec()
+        self.solve_wF_vec()
         
         # Run the regression
-        regression = self.run_regression()
+        self.run_regression()
         
         # Calculate the function that has to be minimized
         objective = (par.beta0_target - sol.beta0)**2 + (par.beta1_target - sol.beta1)**2
@@ -226,22 +224,25 @@ class HouseholdSpecializationModelClass:
         sol = self.sol
         alphasigma=SimpleNamespace()
         
+    
         # Set initial guess
-        x0 = [0.5, 0.5]
+        x0 = [0.5, 1]
 
         # Set bounds for alpha and sigma
-        bounds = ((0,1),(0,None))
+        bounds = ((0.0,1.),(0.0,None))
         
         # Apply the minimization
-        res = optimize.minimize(self.objective,x0,bounds=bounds,method='SLSQP')
+        res = optimize.minimize(self.objective,x0,bounds=bounds,method='Nelder-Mead')
         
         # Save the results
         alphasigma.alpha= res.x[0]
         alphasigma.sigma = res.x[1]
+        alphasigma.fun = res.fun
         
         #Print the results
         print(f'optimal alpha = {alphasigma.alpha:.4f}')
         print(f'optimal sigma = {alphasigma.sigma:.4f}')
+        print(f'optimal function = {alphasigma.fun:.4f}')
 
         return res
     
@@ -268,7 +269,7 @@ class HouseholdSpecializationModelClass:
 
         # c. total consumption utility
         Q = C**par.omega*H**(1-par.omega)
-        utility = np.fmax(Q,1e-8)**(1-par.rho)/(1-par.rho) - 0.2*LM + 0.2*LF + 0.4*HM + 0.4 *LF
+        utility = np.fmax(Q,1e-8)**(1-par.rho)/(1-par.rho) + par.deltalm + par.deltalf + par.deltahm+ par.deltahf
 
         # d. disutlity of work
         epsilon_ = 1+1/par.epsilon
@@ -295,16 +296,13 @@ class HouseholdSpecializationModelClass:
            obj= lambda x: -self.calc_utility_addition(x[0], x[1], x[2],x[3])
         
            # Set the initial guess
-           initial_guess = [0.1, 0.1, 0.1, 0.1]
-
-           # Set the constraints
-           constraints = ({'type': 'ineq', 'fun': lambda x :  -x[0] - x[1] + 24}, {'type': 'ineq', 'fun': lambda x : -x[2] -x[3] + 24})
+           initial_guess = [4, 4, 4, 4]
 
            # Set the bounds
            bounds=((1e-8,24), (1e-8,24), (1e-8,24), (1e-8,24))
 
            # Apply the minimize function
-           solution = optimize.minimize(obj, initial_guess, method='SLSQP', bounds=bounds, constraints=constraints)
+           solution = optimize.minimize(obj, initial_guess, method='Nelder-Mead', bounds=bounds)
 
            # Take results of HM and HF
            max.HM=solution.x[1]
@@ -323,7 +321,7 @@ class HouseholdSpecializationModelClass:
         par = self.par
         sol = self.sol
         
-        # Update the parameters for alpha and sigma
+        # Update the parameter sigma
         par.sigma = x
         
         # Calculate the optimal HM and HF vectors
@@ -345,19 +343,21 @@ class HouseholdSpecializationModelClass:
         alphasigma=SimpleNamespace()
         
         # Set initial guess
-        x0 = 0.5
+        x0 = 1
 
         # Set bounds for alpha and sigma
-        bounds = ((0,5))
+        bounds = ((0.0,200))
         
         # Apply the minimization
         res = optimize.minimize_scalar(self.objective_addition,x0,bounds=bounds,method='bounded')
         
         # Save the results
         alphasigma.sigma = res.x
+        alphasigma.fun = res.fun
         
         #Print the results
         print(f'optimal sigma = {alphasigma.sigma:.4f}')
+        print(f'optimal function = {alphasigma.fun:.4f}')
 
         return res
 
