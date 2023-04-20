@@ -23,8 +23,9 @@ class HouseholdSpecializationModelClass:
         par.omega = 0.5 
         par.deltalm = 0.5
         par.deltalf = 0.5
-        par.deltahm = 0.7
-        par.deltahf = 0.7
+        par.deltahm = 0.9
+        par.deltahf = 1
+  
 
         # c. household production
         par.alpha = 0.5
@@ -269,15 +270,15 @@ class HouseholdSpecializationModelClass:
 
         # c. total consumption utility
         Q = C**par.omega*H**(1-par.omega)
-        utility = np.fmax(Q,1e-8)**(1-par.rho)/(1-par.rho) + par.deltalm + par.deltalf + par.deltahm+ par.deltahf
+        utility = np.fmax(Q,1e-8)**(1-par.rho)/(1-par.rho)
 
         # d. disutlity of work
         epsilon_ = 1+1/par.epsilon
-        TM = LM+HM
-        TF = LF+HF
-        disutility = par.nu*(TM**epsilon_/epsilon_+TF**epsilon_/epsilon_)
+        TM = LM + HM
+        TF = LF + HF
+        disutility = par.nu*(TM**epsilon_/epsilon_+TF**epsilon_/epsilon_) 
         
-        return utility - disutility
+        return utility - disutility - par.deltahm*(HM**2)- par.deltahf*(HF**2) - par.deltalm*(LM**2) - par.deltalf*(LF**2)
     
     def solve_wF_vec_addition(self,discrete=False):
         """ solve model for vector of female wages """
@@ -322,7 +323,11 @@ class HouseholdSpecializationModelClass:
         sol = self.sol
         
         # Update the parameter sigma
-        par.sigma = x
+        par.sigma = x[0]
+        par.deltahm = x[1]
+        par.deltahf = x[2]
+        par.deltalm = x[3]
+        par.deltalf = x[4]
         
         # Calculate the optimal HM and HF vectors
         solver = self.solve_wF_vec_addition()
@@ -343,20 +348,28 @@ class HouseholdSpecializationModelClass:
         alphasigma=SimpleNamespace()
         
         # Set initial guess
-        x0 = 1
+        x0 = (1, 0.5, 0.5, 0.5, 0.5)
 
         # Set bounds for alpha and sigma
-        bounds = ((0.0,200))
+        bounds = ((0.0,None), (None, None), (None, None), (None, None), (None, None))
         
         # Apply the minimization
-        res = optimize.minimize_scalar(self.objective_addition,x0,bounds=bounds,method='bounded')
+        res = optimize.minimize(self.objective_addition,x0,method='Nelder-Mead', bounds=bounds)
         
         # Save the results
-        alphasigma.sigma = res.x
+        alphasigma.sigma = res.x[0]
+        alphasigma.deltahm = res.x[1]
+        alphasigma.deltahf = res.x[2]
+        alphasigma.deltalm = res.x[3]
+        alphasigma.deltalf = res.x[4]
         alphasigma.fun = res.fun
         
         #Print the results
         print(f'optimal sigma = {alphasigma.sigma:.4f}')
+        print(f'optimal deltahm = {alphasigma.deltahm:.4f}')
+        print(f'optimal deltahf = {alphasigma.deltahf:.4f}')
+        print(f'optimal deltalm = {alphasigma.deltalm:.4f}')
+        print(f'optimal deltalf = {alphasigma.deltalf:.4f}')
         print(f'optimal function = {alphasigma.fun:.4f}')
 
         return res
