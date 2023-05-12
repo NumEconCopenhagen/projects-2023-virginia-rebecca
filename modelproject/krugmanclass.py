@@ -17,8 +17,8 @@ class KrugmanModelClass :
         sol = self.sol = SimpleNamespace()
 
         # b. parameters
-        par.sigma = 3 # greater than one to have negative sloped elasticity of consumption so that PP curve is upward sloping
-        par.gamma = -0.1
+        par.sigma = 3 # greater than one to have positive denominator of par.sigmafrac
+        par.gamma = -0.1 # lower than zero to have negative sloped elasticity of consumption so that PP curve is upward sloping (since par.sigma > 1)
         par.Np = 1000 # number of grid points 
         par.p_min = 1 
         par.p_max = 100 
@@ -29,6 +29,7 @@ class KrugmanModelClass :
         par.L=1
         par.c=1
         par.sigmafrac = (par.sigma -1)/par.sigma
+        par.t= 0.2
 
     def utility(self,c):
         """ calculate utility """
@@ -79,3 +80,37 @@ class KrugmanModelClass :
 
         return result.root
     
+    def number(self,c_eq):
+        """ find number of firms in equilibrium """
+        par = self.par
+        N = round(par.L/(par.alpha + par.beta*par.L*c_eq))
+        return N
+    
+    def pp_tax(self,c):
+        """ define monopolistic price function with tax """
+        
+        par = self.par
+
+        return (self.elasticity(c)*par.beta*par.w*(1 + par.t))/(self.elasticity(c)-1)
+    
+    def profits_tax(self, pr):
+        """ define profit function with tax"""
+
+        par = self.par
+
+        return pr*par.L*par.c -par.alpha*par.w -par.beta*(1+par.t)*par.L*par.c*par.w 
+    
+    def solve_firm2_tax(self):
+        """" solve zero profit condition with tax"""
+        par = self.par 
+        obj = lambda x: self.profits_tax(x)
+        result = optimize.root_scalar(obj, bracket=[0.001, 9000], method='brentq')
+
+        return result.root
+    
+    
+    def number_tax(self,c_eq):
+        """ find number of firms in equilibrium with tax"""
+        par = self.par
+        N = round(par.L/(par.alpha + par.beta*(1+par.t)*par.L*c_eq))
+        return N
